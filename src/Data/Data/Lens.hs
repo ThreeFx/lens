@@ -350,13 +350,15 @@ cache :: IORef Cache
 cache = unsafePerformIO $ newIORef $ Cache emptyHitMap M.empty
 {-# NOINLINE cache #-}
 
-readCacheFollower :: DataBox -> TypeRep -> Maybe Follower
-readCacheFollower b@(DataBox kb _) ka = inlinePerformIO $
-  readIORef cache >>= \ (Cache hm m) -> case M.lookup kb m >>= M.lookup ka of
-    Just a -> return a
-    Nothing -> E.try (return $! insertHitMap b hm) >>= \r -> case r of
-      Left SomeException{}                         -> atomicModifyIORef cache $ \(Cache hm' n) -> (Cache hm' (insert2 kb ka Nothing n), Nothing)
-      Right hm' | fol <- Just (follower kb ka hm') -> atomicModifyIORef cache $ \(Cache _ n) -> (Cache hm' (insert2 kb ka fol n),    fol)
+readCacheFollower _ _ = Nothing
+
+--readCacheFollower :: DataBox -> TypeRep -> Maybe Follower
+--readCacheFollower b@(DataBox kb _) ka = inlinePerformIO $
+--  readIORef cache >>= \ (Cache hm m) -> case M.lookup kb m >>= M.lookup ka of
+--    Just a -> return a
+--    Nothing -> E.try (return $! insertHitMap b hm) >>= \r -> case r of
+--      Left SomeException{}                         -> atomicModifyIORef cache $ \(Cache hm' n) -> (Cache hm' (insert2 kb ka Nothing n), Nothing)
+--      Right hm' | fol <- Just (follower kb ka hm') -> atomicModifyIORef cache $ \(Cache _ n) -> (Cache hm' (insert2 kb ka fol n),    fol)
 
 insert2 :: TypeRep -> TypeRep -> a -> HashMap TypeRep (HashMap TypeRep a) -> HashMap TypeRep (HashMap TypeRep a)
 insert2 x y v = M.insertWith (const $ M.insert y v) x (M.singleton y v)
